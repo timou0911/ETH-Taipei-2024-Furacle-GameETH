@@ -35,6 +35,7 @@ contract PriceGuess {
     uint256 private s_lastTimeStamp;
     AggregatorV3Interface private s_dataFeed;
     PriceGuessState private s_priceGuessState;
+    bool private s_shouldSettle;
 
     /** Events */
     event PriceGuessEntered(address indexed player, bool isBull);
@@ -85,13 +86,23 @@ contract PriceGuess {
             revert PriceGuess__UpkeepNotNeeded();
         }
 
-        s_priceGuessState = PriceGuessState.SETTLING;
+        if (!s_shouldSettle) {
+            s_lastPrice = uint256(getETHUSDLatestPrice());
+            s_shouldSettle = true;
+        } else {
+            s_priceGuessState = PriceGuessState.SETTLING;
 
-        uint256 latestPrice = uint256(getETHUSDLatestPrice());
-        bool answerIsBull = latestPrice > s_lastPrice ? true : false;
+            uint256 latestPrice = uint256(getETHUSDLatestPrice());
 
-        s_lastPrice = latestPrice;
-        settle(answerIsBull);
+            bool answerIsBull = latestPrice > s_lastPrice ? true : false;
+
+            settle(answerIsBull);
+            s_priceGuessState = PriceGuessState.OPEN;
+            s_shouldSettle = false;
+            s_lastTimeStamp = block.timestamp;
+            s_bullGuessors = new address payable[](0);
+            s_bearGuessors = new address payable[](0);
+        }
     }
 
     function settle(bool isBull) internal {
@@ -109,15 +120,10 @@ contract PriceGuess {
             }
         }
 
-        s_priceGuessState = PriceGuessState.OPEN;
-        s_lastTimeStamp = block.timestamp;
-        s_bullGuessors = new address payable[](0);
-        s_bearGuessors = new address payable[](0);
-
         emit PriceGuessCycleSettled(isBull);
     }
 
-    function getETHUSDLatestPrice() private view returns (int256 answer) {
+    function getETHUSDLatestPrice() public view returns (int256 answer) {
         (, answer, , , ) = s_dataFeed.latestRoundData();
     }
 
