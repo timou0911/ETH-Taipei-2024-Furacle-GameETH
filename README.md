@@ -9,6 +9,8 @@ We have built a game based on betting on the ETH/USD price. Every new day (after
 
 Each participant enters the game with 0.01 ether locked in. Once the result is announced, the contract performs the settlement, calculating the amount of money that participants who guessed correctly can reclaim. Winners will receive their locked ethers plus a share of the money lost by the losers. We take a 5% fee from the latter.
 
+![無標題-2024-03-24-1056](https://github.com/timou0911/ETH-Taipei-2024-Furacle-GameETH/assets/99255480/29ce9233-af41-4a90-bfd4-2fac2b358f53)
+
 ## How it’s Made
 For the price feed, we utilize the Chainlink Data Feed (AggregatorV3Interface) to retrieve the current price of ETH/USD. To retrieve the price at 12 p.m. and at 12 a.m. every day, as well as to perform settlements, Chainlink Automation fulfills our requirements.
 
