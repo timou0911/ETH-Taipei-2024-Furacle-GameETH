@@ -19,8 +19,8 @@ contract PriceGuess {
 
     /** Enums */
     enum PriceGuessState {
-        OPEN,
-        SETTLING
+        OPEN, // day 1 12 p.m. ~ day 2 12 a.m
+        SETTLING // day 2 12 a.m. ~ day 2 12 p.m.
     }
 
     /** State Varibles */
@@ -31,7 +31,7 @@ contract PriceGuess {
     address payable[] private s_bearGuessors;
     uint256 private s_bullGuessorBalance;
     uint256 private s_bearGuessorBalance;
-    uint256 private s_lastPrice;
+    uint256 private s_midnightPrice;
     uint256 private s_lastTimeStamp;
     AggregatorV3Interface private s_dataFeed;
     PriceGuessState private s_priceGuessState;
@@ -87,14 +87,15 @@ contract PriceGuess {
         }
 
         if (!s_shouldSettle) {
-            s_lastPrice = uint256(getETHUSDLatestPrice());
+            s_midnightPrice = uint256(getETHUSDLatestPrice());
             s_shouldSettle = true;
-        } else {
             s_priceGuessState = PriceGuessState.SETTLING;
+        } else {
+            uint256 nextDayMoonPrice = uint256(getETHUSDLatestPrice());
 
-            uint256 latestPrice = uint256(getETHUSDLatestPrice());
-
-            bool answerIsBull = latestPrice > s_lastPrice ? true : false;
+            bool answerIsBull = nextDayMoonPrice > s_midnightPrice
+                ? true
+                : false;
 
             settle(answerIsBull);
             s_priceGuessState = PriceGuessState.OPEN;
@@ -110,13 +111,13 @@ contract PriceGuess {
             s_bearGuessorBalance = (s_bearGuessorBalance * 19) / 20;
             uint256 winnerShare = s_bearGuessorBalance / s_bullGuessors.length;
             for (uint i = 0; i < s_bullGuessors.length; i++) {
-                s_bullGuessors[i].transfer(winnerShare);
+                s_bullGuessors[i].transfer(winnerShare + 0.01 ether);
             }
         } else {
             s_bullGuessorBalance = (s_bullGuessorBalance * 19) / 20;
             uint256 winnerShare = s_bullGuessorBalance / s_bearGuessors.length;
             for (uint i = 0; i < s_bearGuessors.length; i++) {
-                s_bearGuessors[i].transfer(winnerShare);
+                s_bearGuessors[i].transfer(winnerShare + 0.01 ether);
             }
         }
 
@@ -136,7 +137,7 @@ contract PriceGuess {
         return s_priceGuessState;
     }
 
-    function getLastPrice() public view returns (uint256) {
-        return s_lastPrice;
+    function getMidnightPrice() public view returns (uint256) {
+        return s_midnightPrice;
     }
 }
